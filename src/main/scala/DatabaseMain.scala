@@ -27,7 +27,7 @@ object DatabaseMain extends App {
     }
     //Attempt to drop the table, Await does not block here
     Await.result(dropFuture, Duration.Inf).andThen {
-      case Success(_) => initialisePeople
+      case Success(_) => println("table dropped")
       case Failure(error) => println("Dropping the table failed due to: " + error.getMessage)
         initialisePeople
     }
@@ -60,8 +60,7 @@ object DatabaseMain extends App {
       db.run(query)
     }
     Await.result(insertPeople, Duration.Inf).andThen {
-      case Success(_) => mostCommonName()
-        listPeople
+      case Success(_) => println("Table has been populated")
       case Failure(error) => println("Welp! Something went wrong! " + error.getMessage)
     }
   }
@@ -160,7 +159,7 @@ object DatabaseMain extends App {
     val queryFuture = Future {
       db.run(peopleTable.groupBy(_.fName).map {
         case (fName, occurrence) => fName -> occurrence.length
-      }.result).map({case a => println(a.maxBy(a=>a._2))})
+      }.result).map({ case a => println(a.maxBy(a => a._2)) })
     }
     Await.result(queryFuture, Duration.Inf).andThen {
       case Success(_) => println()
@@ -168,7 +167,18 @@ object DatabaseMain extends App {
     }
   }
 
+  def mostCommonName2():Unit = {
+    db.run(peopleTable.result).onComplete {
+      case scala.util.Success(value)
+      => println(value.map(value => Tuple2(value._2, value._3)).groupBy(_._1).mapValues(_.size))
+    }
+  }
+
   dropDB
+  initialisePeople
+  mostCommonName2()
+  listPeople
+
   Thread.sleep(10000)
 
 }
